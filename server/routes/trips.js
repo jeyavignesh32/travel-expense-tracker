@@ -1,6 +1,6 @@
 // server/routes/trips.js
 const express = require('express');
-const pool = require('../db/config');
+const { pool } = require('../db/config');
 const router = express.Router();
 
 // Get all trips for a user

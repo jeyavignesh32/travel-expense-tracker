@@ -68,10 +68,12 @@ CREATE TABLE IF NOT EXISTS itinerary_items (
     trip_id INT NOT NULL,
     name VARCHAR(255) NOT NULL,
     type VARCHAR(100) DEFAULT 'Place',
+    day_number INT DEFAULT 1,
+    time_slot VARCHAR(50) DEFAULT '12:00 PM',
     lat DOUBLE,
     lng DOUBLE,
     image_url TEXT,
-    status ENUM('suggested', 'selected', 'visited') DEFAULT 'suggested',
+    status ENUM('suggested', 'selected', 'visited') DEFAULT 'selected',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (trip_id) REFERENCES trips(id) ON DELETE CASCADE
 );
@@ -102,4 +104,15 @@ CREATE TABLE IF NOT EXISTS alerts (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (trip_id) REFERENCES trips(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- 8. Packing Items Table
+CREATE TABLE IF NOT EXISTS packing_items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    trip_id INT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    category VARCHAR(100) DEFAULT 'Clothing',
+    packed BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (trip_id) REFERENCES trips(id) ON DELETE CASCADE
 );

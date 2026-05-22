@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { motion } from 'framer-motion';
-import { LogIn, UserPlus, Mail, Lock, User, Phone } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { LogIn, UserPlus, Mail, Lock, User, Phone, Compass, ArrowRight, ShieldCheck } from 'lucide-react';
 
 export const Login = () => {
   const [email, setEmail] = useState('');
@@ -22,54 +22,36 @@ export const Login = () => {
     }
   };
 
-  return (
-    <div className="auth-container" style={{ 
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-      padding: '24px'
-    }}>
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="glass-card" 
-        style={{ width: '100%', maxWidth: '420px', padding: '40px' }}
-      >
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <h1 className="brand-font" style={{ fontSize: '28px', marginBottom: '8px' }}>Welcome Back</h1>
-          <p style={{ color: 'var(--text-muted)' }}>Sign in to continue your travel journey</p>
-        </div>
-
-        {error && <div style={{ color: 'var(--danger)', marginBottom: '16px', fontSize: '14px' }}>{error}</div>}
-
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div className="input-group">
-            <Mail size={18} style={{ position: 'absolute', margin: '16px', color: 'var(--text-muted)' }} />
-            <input 
-              type="email" placeholder="Email Address" required 
-              value={email} onChange={(e) => setEmail(e.target.value)}
-              style={inputStyle}
-            />
-          </div>
-          <div className="input-group">
-            <Lock size={18} style={{ position: 'absolute', margin: '16px', color: 'var(--text-muted)' }} />
-            <input 
-              type="password" placeholder="Password" required 
-              value={password} onChange={(e) => setPassword(e.target.value)}
-              style={inputStyle}
-            />
-          </div>
-          <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-            <LogIn size={20} />
-            Continue
-          </button>
-        </form>
-
-        <p style={{ marginTop: '24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>
-          Don't have an account? <Link to="/register" style={{ color: 'var(--primary)', fontWeight: '600' }}>Sign up</Link>
-        </p>
-      </motion.div>
+  return <AuthLayout 
+    title="Welcome Back" 
+    sub="Sign in to continue your travel journey"
+    error={error}
+    onSubmit={handleSubmit}
+    footer={<>Don't have an account? <Link to="/register" style={{ color: 'var(--primary)', fontWeight: '700' }}>Sign up</Link></>}
+  >
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div style={{ position: 'relative' }}>
+        <Mail size={18} style={{ position: 'absolute', left: '16px', top: '16px', color: 'var(--text-dim)' }} />
+        <input 
+          type="email" placeholder="Email Address" required 
+          className="input-premium" style={{ paddingLeft: '48px' }}
+          value={email} onChange={(e) => setEmail(e.target.value)}
+        />
+      </div>
+      <div style={{ position: 'relative' }}>
+        <Lock size={18} style={{ position: 'absolute', left: '16px', top: '16px', color: 'var(--text-dim)' }} />
+        <input 
+          type="password" placeholder="Password" required 
+          className="input-premium" style={{ paddingLeft: '48px' }}
+          value={password} onChange={(e) => setPassword(e.target.value)}
+        />
+      </div>
+      <button type="submit" className="btn-premium" style={{ marginTop: '10px' }}>
+        <LogIn size={20} />
+        Sign In
+      </button>
     </div>
-  );
+  </AuthLayout>;
 };
 
 export const Register = () => {
@@ -88,74 +70,114 @@ export const Register = () => {
     }
   };
 
-  return (
-    <div className="auth-container" style={{ 
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-      padding: '24px'
+  return <AuthLayout 
+    title="Create Account" 
+    sub="Start your smart travel tracking today"
+    error={error}
+    onSubmit={handleSubmit}
+    footer={<>Already have an account? <Link to="/login" style={{ color: 'var(--primary)', fontWeight: '700' }}>Log in</Link></>}
+  >
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ position: 'relative' }}>
+        <User size={18} style={{ position: 'absolute', left: '16px', top: '16px', color: 'var(--text-dim)' }} />
+        <input 
+          placeholder="Full Name" required className="input-premium" style={{ paddingLeft: '48px' }}
+          value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})}
+        />
+      </div>
+      <div style={{ position: 'relative' }}>
+        <Mail size={18} style={{ position: 'absolute', left: '16px', top: '16px', color: 'var(--text-dim)' }} />
+        <input 
+          type="email" placeholder="Email Address" required className="input-premium" style={{ paddingLeft: '48px' }}
+          value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})}
+        />
+      </div>
+      <div style={{ position: 'relative' }}>
+        <Lock size={18} style={{ position: 'absolute', left: '16px', top: '16px', color: 'var(--text-dim)' }} />
+        <input 
+          type="password" placeholder="Password" required className="input-premium" style={{ paddingLeft: '48px' }}
+          value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})}
+        />
+      </div>
+      <button type="submit" className="btn-premium" style={{ marginTop: '16px' }}>
+        <UserPlus size={20} />
+        Create Account
+      </button>
+    </div>
+  </AuthLayout>;
+};
+
+const AuthLayout = ({ title, sub, error, onSubmit, children, footer }) => (
+  <div style={{ 
+    minHeight: '100vh', display: 'grid', gridTemplateColumns: '1.1fr 0.9fr',
+    background: 'var(--bg-main)'
+  }}>
+    {/* Left Side: Brand Visual */}
+    <div style={{ 
+      background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+      padding: '60px', position: 'relative', display: 'flex', flexDirection: 'column',
+      justifyContent: 'space-between', color: 'white', overflow: 'hidden'
     }}>
+      {/* Abstract Background Elements */}
+      <div style={{ position: 'absolute', top: '-100px', right: '-100px', width: '400px', height: '400px', borderRadius: '50%', background: 'var(--primary)', filter: 'blur(120px)', opacity: 0.15 }}></div>
+      <div style={{ position: 'absolute', bottom: '-100px', left: '-100px', width: '400px', height: '400px', borderRadius: '50%', background: 'var(--secondary)', filter: 'blur(120px)', opacity: 0.15 }}></div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', zIndex: 10 }}>
+        <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Compass size={24} />
+        </div>
+        <span className="brand-font" style={{ fontSize: '24px' }}>TravelSense</span>
+      </div>
+
+      <div style={{ zIndex: 10, maxWidth: '500px' }}>
+        <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ fontSize: '56px', fontWeight: '800', lineHeight: '1.1', marginBottom: '24px' }}>
+          Travel with <span className="gradient-text">Confidence.</span>
+        </motion.h1>
+        <p style={{ fontSize: '18px', color: '#94a3b8', lineHeight: '1.6' }}>
+          The only platform you need for smart group expense tracking, real-time safety radar, and seamless trip planning.
+        </p>
+      </div>
+
+      <div style={{ zIndex: 10 }}>
+        <div style={{ display: 'flex', gap: '40px' }}>
+           <div><p style={{ fontSize: '24px', fontWeight: '800', margin: 0 }}>10k+</p><p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>Active Travelers</p></div>
+           <div><p style={{ fontSize: '24px', fontWeight: '800', margin: 0 }}>50+</p><p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>Destinations</p></div>
+        </div>
+      </div>
+    </div>
+
+    {/* Right Side: Form */}
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px' }}>
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="glass-card" 
-        style={{ width: '100%', maxWidth: '420px', padding: '40px' }}
+        initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+        style={{ width: '100%', maxWidth: '420px' }}
       >
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <h1 className="brand-font" style={{ fontSize: '28px', marginBottom: '8px' }}>Create Account</h1>
-          <p style={{ color: 'var(--text-muted)' }}>Start your smart travel tracking today</p>
+        <div style={{ marginBottom: '40px' }}>
+          <h2 style={{ fontSize: '32px', marginBottom: '8px' }}>{title}</h2>
+          <p style={{ color: 'var(--text-muted)' }}>{sub}</p>
         </div>
 
-        {error && <div style={{ color: 'var(--danger)', marginBottom: '16px', fontSize: '14px' }}>{error}</div>}
+        {error && (
+          <div style={{ 
+            padding: '12px 16px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.1)', 
+            color: 'var(--danger)', fontSize: '14px', marginBottom: '24px',
+            display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600'
+          }}>
+            <ShieldCheck size={18} /> {error}
+          </div>
+        )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div className="input-group">
-            <User size={18} style={{ position: 'absolute', margin: '14px', color: 'var(--text-muted)' }} />
-            <input 
-              placeholder="Full Name" required 
-              value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})}
-              style={inputStyle}
-            />
-          </div>
-          <div className="input-group">
-            <Mail size={18} style={{ position: 'absolute', margin: '14px', color: 'var(--text-muted)' }} />
-            <input 
-              type="email" placeholder="Email Address" required 
-              value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})}
-              style={inputStyle}
-            />
-          </div>
-          <div className="input-group">
-            <Phone size={18} style={{ position: 'absolute', margin: '14px', color: 'var(--text-muted)' }} />
-            <input 
-              placeholder="Phone (optional)" 
-              value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})}
-              style={inputStyle}
-            />
-          </div>
-          <div className="input-group">
-            <Lock size={18} style={{ position: 'absolute', margin: '14px', color: 'var(--text-muted)' }} />
-            <input 
-              type="password" placeholder="Password" required 
-              value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})}
-              style={inputStyle}
-            />
-          </div>
-          <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '8px' }}>
-            <UserPlus size={20} />
-            Join Now
-          </button>
+        <form onSubmit={onSubmit}>
+          {children}
         </form>
 
-        <p style={{ marginTop: '24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>
-          Already have an account? <Link to="/login" style={{ color: 'var(--primary)', fontWeight: '600' }}>Log in</Link>
-        </p>
+        <div style={{ 
+          marginTop: '40px', paddingTop: '32px', borderTop: '1px solid var(--border-light)',
+          textAlign: 'center', fontSize: '14px', color: 'var(--text-muted)'
+        }}>
+          {footer}
+        </div>
       </motion.div>
     </div>
-  );
-};
-
-const inputStyle = {
-  width: '100%', padding: '12px 12px 12px 48px', borderRadius: '12px',
-  border: '1px solid #e2e8f0', background: 'rgba(255, 255, 255, 0.5)',
-  outline: 'none', transition: 'border-color 0.2s', fontSize: '15px'
-};
+  </div>
+);

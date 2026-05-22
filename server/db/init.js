@@ -40,7 +40,20 @@ async function initDB() {
     await connection.query('INSERT IGNORE INTO trip_members (trip_id, user_id, role) VALUES (1, 1, "admin")');
     
     // 4. Seed some sample itinerary items
-    await connection.query('INSERT IGNORE INTO itinerary_items (trip_id, name, type, image_url, status) VALUES (1, "Baga Beach", "Beach", "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=800", "selected"), (1, "Fort Aguada", "Historic", "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=800", "suggested")');
+    await connection.query('INSERT IGNORE INTO itinerary_items (id, trip_id, name, type, day_number, time_slot, image_url, status) VALUES ' +
+      '(1, 1, "Arrival & Check-in", "Transport", 1, "09:00 AM", "", "selected"), ' +
+      '(2, 1, "Lunch at Beach Shack", "Food", 1, "01:00 PM", "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=800", "selected"), ' +
+      '(3, 1, "Sunset Yoga", "Activity", 1, "04:00 PM", "", "selected"), ' +
+      '(4, 1, "Old Goa Tour", "Historic", 2, "10:00 AM", "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=800", "selected"), ' +
+      '(5, 1, "Spice Plantation Visit", "Nature", 2, "02:00 PM", "", "selected")');
+
+    // 5. Seed some sample packing items
+    await connection.query('INSERT IGNORE INTO packing_items (id, trip_id, name, category, packed) VALUES ' + 
+      '(1, 1, "Passport & Visas", "Documents", 1), ' +
+      '(2, 1, "Power Bank", "Electronics", 1), ' +
+      '(3, 1, "Beach Towel", "Clothing", 0), ' +
+      '(4, 1, "First Aid Kit", "Meds", 0), ' +
+      '(5, 1, "Sunscreen", "Toiletries", 0)');
 
     console.log('✨ Seeding successful!');
   } catch (err) {

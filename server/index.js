@@ -8,7 +8,9 @@ const authRoutes = require('./routes/auth');
 const expenseRoutes = require('./routes/expenses');
 const tripRoutes = require('./routes/trips');
 const itineraryRoutes = require('./routes/itinerary');
-const pool = require('./db/config');
+const packingRoutes = require('./routes/packing');
+const copilotRoutes = require('./routes/copilot');
+const { pool } = require('./db/config');
 
 const app = express();
 const server = http.createServer(app);
@@ -27,6 +29,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/trips', tripRoutes);
 app.use('/api/itinerary', itineraryRoutes);
+app.use('/api/packing', packingRoutes);
+app.use('/api/copilot', copilotRoutes);
 
 // Socket.io for Real-time Location Updates
 io.on('connection', (socket) => {

@@ -12,15 +12,25 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
+// Health check state
+let dbConnected = false;
+
 // Test connection
-(async () => {
+const testConnection = async () => {
   try {
     const connection = await pool.getConnection();
     console.log('✅ MySQL Connected Successfully');
+    dbConnected = true;
     connection.release();
   } catch (err) {
     console.error('❌ MySQL Connection Failed:', err.message);
+    dbConnected = false;
   }
-})();
+};
 
-module.exports = pool;
+testConnection();
+
+module.exports = {
+  pool,
+  isHealthy: () => dbConnected
+};
