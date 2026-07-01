@@ -4,7 +4,7 @@
 
 :root {
   /* Premium Palette (HSL for better shades) */
-  --primary-h: 221;
+  --primary-h: 230; /* Changed from 221 to 230 for a GitHub commit test */
   --primary-s: 83%;
   --primary-l: 53%;
   --primary: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
