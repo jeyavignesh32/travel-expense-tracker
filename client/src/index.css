@@ -15,7 +15,7 @@
   --secondary-l: 56%;
   --secondary: hsl(var(--secondary-h), var(--secondary-s), var(--secondary-l));
   
-  --accent-h: 195; /* Adjusted accent hue for another subtle UI update */
+  --accent-h: 198; /* Adjusted accent hue for another subtle UI update */
   --accent-s: 89%;
   --accent-l: 48%;
   --accent: hsl(var(--accent-h), var(--accent-s), var(--accent-l));
