@@ -34,7 +34,7 @@
   --border-strong: rgba(226, 232, 240, 1);
 
   /* Status */
-  --success: #10b981;
+  --success: #0ea572; /* Refined success green tone */
   --danger: #ef4444;
   --warning: #f59e0b;
 
