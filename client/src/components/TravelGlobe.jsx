@@ -19,12 +19,12 @@ const TravelGlobe = ({ trips = [] }) => {
 
   // Auto-rotate and focus
   useEffect(() => {
-    if (globeRef.current) {
+    if (globeRef.current && dimensions.width > 0) {
       globeRef.current.controls().autoRotate = true;
-      globeRef.current.controls().autoRotateSpeed = 0.5;
+      globeRef.current.controls().autoRotateSpeed = 1.0;
       globeRef.current.pointOfView({ altitude: 2.5 });
     }
-  }, []);
+  }, [dimensions.width]);
 
   // Responsive sizing
   useEffect(() => {
