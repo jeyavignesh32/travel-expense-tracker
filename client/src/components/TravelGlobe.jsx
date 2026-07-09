@@ -20,10 +20,22 @@ const TravelGlobe = ({ trips = [] }) => {
   // Auto-rotate and focus
   useEffect(() => {
     if (globeRef.current && dimensions.width > 0) {
-      globeRef.current.controls().autoRotate = true;
-      globeRef.current.controls().autoRotateSpeed = 1.0;
-      globeRef.current.pointOfView({ altitude: 2.5 });
+      const controls = globeRef.current.controls();
+      controls.autoRotate = true;
+      controls.autoRotateSpeed = 0.6;
+      
+      if (markers.length > 0) {
+        // Zoom in closer to the first marker for realism
+        globeRef.current.pointOfView({ 
+          lat: markers[0].lat, 
+          lng: markers[0].lng, 
+          altitude: 1.5 
+        }, 3000);
+      } else {
+        globeRef.current.pointOfView({ altitude: 2.0 });
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dimensions.width]);
 
   // Responsive sizing
@@ -56,8 +68,8 @@ const TravelGlobe = ({ trips = [] }) => {
           globeImageUrl="//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
           bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
           showAtmosphere={true}
-          atmosphereColor="#60a5fa"
-          atmosphereAltitude={0.15}
+          atmosphereColor="#2b65e3"
+          atmosphereAltitude={0.12}
           backgroundColor="rgba(0,0,0,0)"
           pointsData={markers}
           pointAltitude="size"
