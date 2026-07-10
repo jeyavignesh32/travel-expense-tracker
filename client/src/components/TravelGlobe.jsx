@@ -7,8 +7,22 @@ const TravelGlobe = ({ trips = [] }) => {
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const containerRef = useRef();
 
-  // Create markers from trips
-  const markers = trips.filter(t => t.lat && t.lon).map(t => ({
+  // Default global cities to make the globe look populated
+  const DEFAULT_PLACES = [
+    { name: 'Paris', lat: 48.8566, lng: 2.3522 },
+    { name: 'New York', lat: 40.7128, lng: -74.0060 },
+    { name: 'Tokyo', lat: 35.6762, lng: 139.6503 },
+    { name: 'Sydney', lat: -33.8688, lng: 151.2093 },
+    { name: 'Dubai', lat: 25.2048, lng: 55.2708 },
+    { name: 'Rio de Janeiro', lat: -22.9068, lng: -43.1729 },
+    { name: 'Cape Town', lat: -33.9249, lng: 18.4241 },
+    { name: 'London', lat: 51.5074, lng: -0.1278 },
+    { name: 'Singapore', lat: 1.3521, lng: 103.8198 },
+    { name: 'Mumbai', lat: 19.0760, lng: 72.8777 }
+  ].map(p => ({ ...p, size: 0.03, color: 'rgba(255, 255, 255, 0.4)' }));
+
+  // Create markers from user trips
+  const userMarkers = trips.filter(t => t.lat && t.lon).map(t => ({
     id: t.id,
     name: t.destination,
     lat: t.lat,
@@ -17,6 +31,8 @@ const TravelGlobe = ({ trips = [] }) => {
     color: '#3b82f6'
   }));
 
+  const allPoints = [...DEFAULT_PLACES, ...userMarkers];
+
   // Auto-rotate and focus
   useEffect(() => {
     if (globeRef.current && dimensions.width > 0) {
@@ -24,11 +40,11 @@ const TravelGlobe = ({ trips = [] }) => {
       controls.autoRotate = true;
       controls.autoRotateSpeed = 0.6;
       
-      if (markers.length > 0) {
+      if (userMarkers.length > 0) {
         // Zoom in closer to the first marker for realism
         globeRef.current.pointOfView({ 
-          lat: markers[0].lat, 
-          lng: markers[0].lng, 
+          lat: userMarkers[0].lat, 
+          lng: userMarkers[0].lng, 
           altitude: 1.5 
         }, 3000);
       } else {
@@ -71,12 +87,12 @@ const TravelGlobe = ({ trips = [] }) => {
           atmosphereColor="#2b65e3"
           atmosphereAltitude={0.12}
           backgroundColor="rgba(0,0,0,0)"
-          pointsData={markers}
+          pointsData={allPoints}
           pointAltitude="size"
           pointColor="color"
-          pointRadius={0.5}
+          pointRadius={0.4}
           pointsMerge={false}
-          htmlElementsData={markers}
+          htmlElementsData={userMarkers}
           htmlElement={d => {
             const el = document.createElement('div');
             el.innerHTML = `
