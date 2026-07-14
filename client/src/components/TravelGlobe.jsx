@@ -1,5 +1,7 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
-import Globe from 'react-globe.gl';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
+import Map, { Source, Layer, Marker } from 'react-map-gl/maplibre';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 
 // ── 100+ Major World Cities ──────────────────────────────────────────────
 const WORLD_CITIES = [
@@ -121,102 +123,74 @@ const WORLD_CITIES = [
   { name: 'Visakhapatnam', lat: 17.6868, lng: 83.2185, pop: 2.0 },
 ];
 
+const mapStyle = {
+  version: 8,
+  sources: {
+    'esri-satellite': {
+      type: 'raster',
+      tiles: [
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+      ],
+      tileSize: 256,
+      maxzoom: 18
+    }
+  },
+  layers: [
+    {
+      id: 'satellite-layer',
+      type: 'raster',
+      source: 'esri-satellite',
+      minzoom: 0,
+      maxzoom: 19
+    }
+  ]
+};
+
 const TravelGlobe = ({ trips = [] }) => {
-  const globeRef = useRef();
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const containerRef = useRef();
-
-  // Build city points with size based on population
-  const cityPoints = useMemo(() => 
-    WORLD_CITIES.map(c => ({
-      lat: c.lat,
-      lng: c.lng,
-      name: c.name,
-      size: Math.max(0.01, Math.min(0.06, c.pop / 200)),
-      color: 'rgba(255, 200, 50, 0.6)',
-      isCity: true
-    })), []
-  );
-
+  const mapRef = useRef();
+  
   // User trip markers (highlighted)
   const userMarkers = useMemo(() => 
     trips.filter(t => t.lat && t.lon).map(t => ({
       id: t.id,
       name: t.destination,
       lat: t.lat,
-      lng: t.lon,
-      size: 0.12,
-      color: '#3b82f6',
-      isCity: false
+      lng: t.lon
     })), [trips]
   );
 
-  // All points combined
-  const allPoints = useMemo(() => [...cityPoints, ...userMarkers], [cityPoints, userMarkers]);
+  // Initial map view state
+  const [viewState, setViewState] = useState({
+    longitude: userMarkers.length > 0 ? userMarkers[0].lng : 78,
+    latitude: userMarkers.length > 0 ? userMarkers[0].lat : 20,
+    zoom: userMarkers.length > 0 ? 3 : 1.5,
+    pitch: 45
+  });
 
-  // Arcs between user's trips
-  const tripArcs = useMemo(() => {
-    if (userMarkers.length < 2) return [];
-    return userMarkers.slice(0, -1).map((m, i) => ({
-      startLat: m.lat,
-      startLng: m.lng,
-      endLat: userMarkers[i + 1].lat,
-      endLng: userMarkers[i + 1].lng,
-      color: ['rgba(59, 130, 246, 0.6)', 'rgba(147, 51, 234, 0.6)']
-    }));
-  }, [userMarkers]);
-
-  // City labels (only show bigger cities)
-  const labelData = useMemo(() => 
-    WORLD_CITIES.filter(c => c.pop >= 3.0).map(c => ({
-      lat: c.lat,
-      lng: c.lng,
-      name: c.name,
-      pop: c.pop
-    })), []
-  );
-
-  // Auto-rotate and focus
-  useEffect(() => {
-    if (globeRef.current && dimensions.width > 0) {
-      const controls = globeRef.current.controls();
-      controls.autoRotate = true;
-      controls.autoRotateSpeed = 0.4;
-      controls.enableZoom = true;
-      controls.minDistance = 120;
-      controls.maxDistance = 500;
-
-      if (userMarkers.length > 0) {
-        globeRef.current.pointOfView({ 
-          lat: userMarkers[0].lat, 
-          lng: userMarkers[0].lng, 
-          altitude: 1.8 
-        }, 3000);
-      } else {
-        // Start with a nice view of India
-        globeRef.current.pointOfView({ lat: 20, lng: 78, altitude: 2.2 }, 2000);
+  const onMapLoad = (e) => {
+    const map = e.target;
+    // Enable globe projection in MapLibre
+    map.setProjection({ type: 'globe' });
+    
+    // Add a simple rotation animation
+    let animation;
+    function rotateCamera() {
+      if (!map.isZooming() && !map.isDragging() && map.getZoom() < 4) {
+        const center = map.getCenter();
+        center.lng += 0.1;
+        map.jumpTo({ center });
       }
+      animation = requestAnimationFrame(rotateCamera);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dimensions.width]);
+    rotateCamera();
 
-  // Responsive sizing
-  useEffect(() => {
-    const handleResize = () => {
-      if (containerRef.current) {
-        setDimensions({
-          width: containerRef.current.offsetWidth,
-          height: containerRef.current.offsetHeight
-        });
-      }
+    return () => {
+      cancelAnimationFrame(animation);
     };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  };
 
   return (
-    <div ref={containerRef} style={{ 
+    <div style={{ 
       width: '100%', 
       minHeight: '450px', 
       height: '100%', 
@@ -238,89 +212,68 @@ const TravelGlobe = ({ trips = [] }) => {
         fontFamily: "'Inter', 'Segoe UI', sans-serif"
       }}>
         <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#3b82f6', boxShadow: '0 0 6px #3b82f6' }}></span>
-        🌍 Earth View
+        🌍 Realistic Earth View
       </div>
 
-      {/* City count */}
-      <div style={{ 
-        position: 'absolute', top: '16px', right: '16px', zIndex: 10, 
-        backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(12px)', 
-        padding: '6px 14px', borderRadius: '9999px', 
-        border: '1px solid rgba(255,255,255,0.1)', 
-        color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: 500,
-        fontFamily: "'Inter', 'Segoe UI', sans-serif"
-      }}>
-        {WORLD_CITIES.length} cities • {userMarkers.length} trips
-      </div>
+      <Map
+        ref={mapRef}
+        {...viewState}
+        onMove={evt => setViewState(evt.viewState)}
+        mapStyle={mapStyle}
+        onLoad={onMapLoad}
+        dragRotate={true}
+        pitchWithRotate={true}
+        maxPitch={85}
+        terrain={{ source: 'esri-satellite', exaggeration: 1.5 }} // Optional terrain, won't work well without a proper DEM source, but maplibre handles globe naturally
+      >
+        {/* Popular Cities - Small markers */}
+        {WORLD_CITIES.map((city, idx) => (
+          <Marker 
+            key={\`city-\${idx}\`} 
+            longitude={city.lng} 
+            latitude={city.lat}
+            anchor="center"
+          >
+            <div style={{
+              width: '6px',
+              height: '6px',
+              backgroundColor: 'rgba(255, 200, 50, 0.8)',
+              borderRadius: '50%',
+              boxShadow: '0 0 4px rgba(255, 200, 50, 0.5)'
+            }}></div>
+          </Marker>
+        ))}
 
-      {/* Controls hint */}
-      <div style={{ 
-        position: 'absolute', bottom: '16px', left: '50%', transform: 'translateX(-50%)', zIndex: 10, 
-        backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)', 
-        padding: '6px 16px', borderRadius: '9999px', 
-        border: '1px solid rgba(255,255,255,0.08)', 
-        color: 'rgba(255,255,255,0.5)', fontSize: '11px', fontWeight: 400,
-        fontFamily: "'Inter', 'Segoe UI', sans-serif"
-      }}>
-        🖱️ Drag to rotate • Scroll to zoom
-      </div>
-      
-      {dimensions.width > 0 && (
-        <Globe
-          ref={globeRef}
-          width={dimensions.width}
-          height={dimensions.height}
-          globeImageUrl="//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
-          bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
-          backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
-          showAtmosphere={true}
-          atmosphereColor="#3b82f6"
-          atmosphereAltitude={0.18}
-          backgroundColor="rgba(0,0,0,0)"
-
-          {/* City dots */}
-          pointsData={allPoints}
-          pointAltitude="size"
-          pointColor="color"
-          pointRadius={d => d.isCity ? 0.25 : 0.6}
-          pointsMerge={false}
-
-          {/* City name labels on globe surface */}
-          labelsData={labelData}
-          labelLat={d => d.lat}
-          labelLng={d => d.lng}
-          labelText={d => d.name}
-          labelSize={d => Math.max(0.3, d.pop / 15)}
-          labelDotRadius={0}
-          labelColor={() => 'rgba(255, 255, 255, 0.55)'}
-          labelResolution={2}
-          labelAltitude={0.005}
-
-          {/* Arcs between trips */}
-          arcsData={tripArcs}
-          arcColor="color"
-          arcDashLength={0.4}
-          arcDashGap={0.2}
-          arcDashAnimateTime={2000}
-          arcStroke={0.5}
-
-          {/* Trip labels (HTML overlay) */}
-          htmlElementsData={userMarkers}
-          htmlElement={d => {
-            const el = document.createElement('div');
-            el.innerHTML = `
-              <div style="display: flex; flex-direction: column; align-items: center; pointer-events: none; transform: translateY(-30px);">
-                <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.85), rgba(147, 51, 234, 0.85)); backdrop-filter: blur(6px); color: white; font-size: 12px; font-weight: 700; padding: 5px 14px; border-radius: 9999px; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); border: 1px solid rgba(255, 255, 255, 0.25); margin-bottom: 4px; white-space: nowrap; font-family: 'Inter', 'Segoe UI', sans-serif; letter-spacing: 0.3px;">
-                  ✈️ ${d.name}
-                </div>
-                <div style="width: 2px; height: 28px; background: linear-gradient(to bottom, rgba(59, 130, 246, 0.8), transparent);"></div>
-                <div style="width: 6px; height: 6px; border-radius: 50%; background: #3b82f6; box-shadow: 0 0 8px #3b82f6;"></div>
+        {/* User Trips - Large glowing markers */}
+        {userMarkers.map((trip) => (
+          <Marker 
+            key={\`trip-\${trip.id}\`} 
+            longitude={trip.lng} 
+            latitude={trip.lat}
+            anchor="bottom"
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', transform: 'translateY(10px)' }}>
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(147, 51, 234, 0.95))',
+                backdropFilter: 'blur(6px)',
+                color: 'white',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                padding: '6px 16px',
+                borderRadius: '9999px',
+                boxShadow: '0 4px 15px rgba(59, 130, 246, 0.5)',
+                border: '1px solid rgba(255, 255, 255, 0.4)',
+                marginBottom: '4px',
+                whiteSpace: 'nowrap'
+              }}>
+                📍 {trip.name}
               </div>
-            `;
-            return el;
-          }}
-        />
-      )}
+              <div style={{ width: '2px', height: '30px', background: 'linear-gradient(to bottom, rgba(59, 130, 246, 0.9), transparent)' }}></div>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#3b82f6', boxShadow: '0 0 10px #3b82f6' }}></div>
+            </div>
+          </Marker>
+        ))}
+      </Map>
     </div>
   );
 };
