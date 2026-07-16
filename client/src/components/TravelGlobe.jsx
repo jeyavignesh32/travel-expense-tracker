@@ -16,38 +16,24 @@ const TravelGlobe = ({ trips = [] }) => {
     })), [trips]
   );
 
-  // Free Esri Satellite + Labels Style for MapLibre
+  // Google Maps Hybrid (Satellite + Labels) Style for MapLibre
   const mapStyle = {
     version: 8,
     sources: {
-      'esri-satellite': {
+      'google-hybrid': {
         type: 'raster',
         tiles: [
-          'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+          'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}'
         ],
         tileSize: 256,
-        attribution: '&copy; Esri, Maxar, Earthstar Geographics'
-      },
-      'esri-labels': {
-        type: 'raster',
-        tiles: [
-          'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'
-        ],
-        tileSize: 256
+        attribution: '&copy; Google'
       }
     },
     layers: [
       {
-        id: 'satellite',
+        id: 'satellite-hybrid',
         type: 'raster',
-        source: 'esri-satellite',
-        minzoom: 0,
-        maxzoom: 22
-      },
-      {
-        id: 'labels',
-        type: 'raster',
-        source: 'esri-labels',
+        source: 'google-hybrid',
         minzoom: 0,
         maxzoom: 22
       }
