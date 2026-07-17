@@ -4,14 +4,17 @@ import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, Calendar, MapPin, Clock, MoreVertical, 
-  CheckCircle2, Circle, Navigation, Camera, Palmtree, Coffee, X
+  CheckCircle2, Circle, Navigation, Camera, Palmtree, Coffee, X, Sparkles
 } from 'lucide-react';
+
+import { SwipeItinerary } from '../components/SwipeItinerary';
 
 export const Itinerary = () => {
   const [activeDay, setActiveDay] = useState(1);
   const [itinerary, setItinerary] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
+  const [showSwipe, setShowSwipe] = useState(false);
   const [formData, setFormData] = useState({
     name: '', type: 'Activity', day_number: 1, time_slot: '09:00 AM'
   });
@@ -67,6 +70,15 @@ export const Itinerary = () => {
     }
   };
 
+  const deleteItineraryItem = async (id) => {
+    try {
+      await axios.delete(`http://localhost:5000/api/itinerary/${id}`);
+      fetchItinerary();
+    } catch (err) {
+      setItinerary(itinerary.filter(item => item.id !== id));
+    }
+  };
+
   const days = [1, 2, 3, 4, 5];
 
   const filteredItems = itinerary.filter(item => item.day === activeDay);
@@ -83,15 +95,30 @@ export const Itinerary = () => {
 
   return (
     <div className="animate-entrance">
+      {showSwipe && (
+        <SwipeItinerary 
+          onClose={() => setShowSwipe(false)} 
+          onBuildComplete={() => fetchItinerary()} 
+        />
+      )}
+
       <header style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
           <h1 style={{ fontSize: '36px', marginBottom: '8px' }}>Trip Timeline</h1>
           <p style={{ color: 'var(--text-muted)' }}>Organize your adventure day-by-day.</p>
         </div>
-        <button onClick={() => { setFormData({...formData, day_number: activeDay}); setShowAdd(true); }} className="btn-premium">
-          <Plus size={20} />
-          Add Activity
-        </button>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button 
+            onClick={() => setShowSwipe(true)} 
+            className="btn-premium"
+            style={{ background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)', color: 'white', display: 'flex', alignItems: 'center', gap: '8px', border: 'none' }}
+          >
+            <Sparkles size={18} /> AI Swipe Builder
+          </button>
+          <button onClick={() => { setFormData({...formData, day_number: activeDay}); setShowAdd(true); }} className="btn-premium">
+            <Plus size={18} /> Add Activity
+          </button>
+        </div>
       </header>
 
       {/* Day Selector */}
@@ -165,8 +192,8 @@ export const Itinerary = () => {
                           <MapPin size={14} /> {item.location}
                         </div>
                       </div>
-                      <button style={{ border: 'none', background: 'transparent', color: 'var(--text-dim)', cursor: 'pointer' }}>
-                        <MoreVertical size={20} />
+                      <button onClick={() => deleteItineraryItem(item.id)} style={{ border: 'none', background: 'transparent', color: 'var(--danger)', cursor: 'pointer', padding: '4px' }}>
+                        <X size={20} />
                       </button>
                     </div>
                   </div>

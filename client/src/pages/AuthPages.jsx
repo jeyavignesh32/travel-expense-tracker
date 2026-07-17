@@ -18,7 +18,7 @@ export const Login = () => {
       await login(email, password);
       navigate('/');
     } catch (err) {
-      setError('Invalid credentials. Please try again.');
+      setError(err.response?.data?.error || 'Invalid credentials. Please try again.');
     }
   };
 
@@ -66,7 +66,7 @@ export const Register = () => {
       await register(formData);
       navigate('/');
     } catch (err) {
-      setError('Registration failed. Try again.');
+      setError(err.response?.data?.error || 'Registration failed. Try again.');
     }
   };
 
@@ -90,6 +90,13 @@ export const Register = () => {
         <input 
           type="email" placeholder="Email Address" required className="input-premium" style={{ paddingLeft: '48px' }}
           value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})}
+        />
+      </div>
+      <div style={{ position: 'relative' }}>
+        <Phone size={18} style={{ position: 'absolute', left: '16px', top: '16px', color: 'var(--text-dim)' }} />
+        <input 
+          type="tel" placeholder="Phone Number" required className="input-premium" style={{ paddingLeft: '48px' }}
+          value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})}
         />
       </div>
       <div style={{ position: 'relative' }}>

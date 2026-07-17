@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Overpass API Live Test — Thiruvengadam</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 24px; }
+    h1 { color: #60a5fa; }
+    .btn { background: #3b82f6; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 15px; margin: 8px 4px; }
+    .btn:hover { background: #2563eb; }
+    .btn.danger { background: #ef4444; }
+    #log { background: #1e293b; border-radius: 12px; padding: 16px; margin-top: 16px; font-size: 13px; line-height: 1.8; max-height: 500px; overflow-y: auto; }
+    .ok { color: #4ade80; } .err { color: #f87171; } .info { color: #facc15; } .place { color: #a78bfa; }
+    #results { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-top: 16px; }
+    .card { background: #1e293b; border-radius: 10px; padding: 14px; border-left: 4px solid #3b82f6; }
+    .card.restaurant { border-color: #4ade80; }
+    .card.temple, .card.mosque, .card.church, .card.place_of_worship { border-color: #f97316; }
+    .card.park, .card.garden { border-color: #86efac; }
+    .card h3 { margin: 0 0 4px; font-size: 14px; }
+    .card .type { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: .05em; }
+    .card .dist { font-size: 12px; color: #60a5fa; margin-top: 6px; }
+    .stats { display: flex; gap: 16px; margin: 16px 0; flex-wrap: wrap; }
+    .stat { background: #1e293b; padding: 12px 20px; border-radius: 8px; text-align: center; }
+    .stat .num { font-size: 28px; font-weight: 800; color: #60a5fa; }
+    .stat .label { font-size: 11px; color: #64748b; }
+    input[type=range] { width: 200px; vertical-align: middle; }
+  </style>
+</head>
+<body>
+  <h1>🗺️ Overpass API Live Test — Thiruvengadam Area</h1>
+  <p style="color:#94a3b8">Tests real OpenStreetMap data directly in browser (Chrome V8). No fake/sample data.</p>
+
+  <div>
+    <label style="color:#94a3b8">Radius: <span id="radiusVal">10</span> km &nbsp;</label>
+    <input type="range" id="radius" min="1" max="50" value="10" oninput="document.getElementById('radiusVal').textContent=this.value">
+    &nbsp;&nbsp;
+    <label><input type="checkbox" id="includeAll" checked> Include all special places (100km)</label>
+  </div>
+  <br>
+  <button class="btn" onclick="runTest()">🔍 Fetch Real Places Now</button>
+  <button class="btn" onclick="getMyLocation()">📍 Use My GPS Location</button>
+  <button class="btn danger" onclick="clearAll()">🗑️ Clear</button>
+
+  <div id="stats" class="stats" style="display:none"></div>
+  <div id="log"></div>
+  <div id="results"></div>
+
+  <script>
+    // Thiruvengadam area default
+    let currentLat = 9.2907;
+    let currentLon = 77.6995;
+
+    function log(msg, cls='info') {
+      const el = document.getElementById('log');
+      el.innerHTML += `<div class="${cls}">${new Date().toLocaleTimeString()} — ${msg}</div>`;
+      el.scrollTop = el.scrollHeight;
+    }
+
+    function clearAll() {
+      document.getElementById('log').innerHTML = '';
+      document.getElementById('results').innerHTML = '';
+      document.getElementById('stats').style.display = 'none';
+    }
+
+    function getMyLocation() {
+      log('Requesting GPS location...', 'info');
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          currentLat = pos.coords.latitude;
+          currentLon = pos.coords.longitude;
+          log(`✅ GPS: ${currentLat.toFixed(5)}, ${currentLon.toFixed(5)} (accuracy: ${Math.round(pos.coords.accuracy)}m)`, 'ok');
+          runTest();
+        },
+        err => {
+          log(`⚠️ GPS failed (${err.message}) — using Thiruvengadam fallback`, 'err');
+          runTest();
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
+      );
+    }
+
+    function getPlaceType(tags) {
+      if (tags.amenity === 'place_of_worship') {
+        const rel = (tags.religion || '').toLowerCase();
+        if (rel === 'hindu') return 'temple';
+        if (rel === 'christian') return 'church';
+        if (rel === 'muslim') return 'mosque';
+        return 'place_of_worship';
+      }
+      if (tags.amenity === 'restaurant' || tags.amenity === 'fast_food') return 'restaurant';
+      if (tags.amenity === 'cafe') return 'cafe';
+      if (tags.amenity === 'pub' || tags.amenity === 'bar') return 'bar';
+      if (tags.tourism === 'museum') return 'museum';
+      if (tags.tourism === 'viewpoint') return 'viewpoint';
+      if (tags.tourism === 'gallery') return 'gallery';
+      if (tags.tourism === 'theme_park') return 'theme_park';
+      if (tags.tourism === 'zoo') return 'zoo';
+      if (tags.tourism === 'attraction') return 'attraction';
+      if (tags.historic) return 'historic';
+      if (tags.leisure === 'park' || tags.leisure === 'garden') return 'park';
+      if (tags.leisure === 'nature_reserve') return 'nature_reserve';
+      return 'attraction';
+    }
+
+    function calcDist(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+
+    const typeEmoji = {
+      temple:'🛕', church:'⛪', mosque:'🕌', place_of_worship:'🛐', gurdwara:'🕉️',
+      restaurant:'🍽️', cafe:'☕', bar:'🍺',
+      museum:'🏛️', gallery:'🖼️', viewpoint:'👁️', theme_park:'🎡', zoo:'🦁',
+      historic:'🏰', park:'🌳', garden:'🌸', nature_reserve:'🌿', attraction:'⭐'
+    };
+
+    async function fetchFromOverpass(lat, lon, radiusM) {
+      const query = `[out:json][timeout:30];(node["amenity"="place_of_worship"]["name"](around:${radiusM},${lat},${lon});node["tourism"]["name"](around:${radiusM},${lat},${lon});node["historic"]["name"](around:${radiusM},${lat},${lon});node["amenity"~"restaurant|cafe|fast_food|pub|bar"]["name"](around:${radiusM},${lat},${lon});node["leisure"~"park|garden|nature_reserve"]["name"](around:${radiusM},${lat},${lon}););out body 100;`;
+      const mirrors = [
+        'https://overpass-api.de/api/interpreter',
+        'https://overpass.osm.ch/api/interpreter',
+        'http://overpass-api.de/api/interpreter'
+      ];
+      for (const base of mirrors) {
+        try {
+          log(`Trying POST: <b>${base}</b> (r=${radiusM}m)...`, 'info');
+          const t0 = Date.now();
+          const res = await fetch(base, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `data=${encodeURIComponent(query)}`,
+            signal: AbortSignal.timeout(35000)
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const ms = Date.now() - t0;
+            if (data.elements && data.elements.length > 0) {
+              log(`✅ Got <b>${data.elements.length}</b> real OSM elements from ${base} in ${ms}ms`, 'ok');
+              return data.elements;
+            } else {
+              log(`⚠️ ${base} returned 0 elements (${ms}ms) — no OSM data in this area or radius too small`, 'err');
+            }
+          } else {
+            log(`❌ HTTP ${res.status} from ${base}`, 'err');
+          }
+        } catch (e) {
+          log(`❌ ${base} failed: <b>${e.message}</b>`, 'err');
+        }
+      }
+      return [];
+    }
+
+    async function runTest() {
+      clearAll();
+      const radiusKm = parseInt(document.getElementById('radius').value);
+      const includeAll = document.getElementById('includeAll').checked;
+
+      log(`📍 Location: <b>${currentLat.toFixed(5)}, ${currentLon.toFixed(5)}</b>`, 'ok');
+      log(`🔍 Fetching within <b>${radiusKm}km</b> radius${includeAll ? ' + 100km for special places' : ''}...`, 'info');
+
+      // Near fetch
+      let elements = await fetchFromOverpass(currentLat, currentLon, radiusKm * 1000);
+
+      // Far fetch for special places
+      let farElements = [];
+      if (includeAll) {
+        log(`Fetching special places in 100km radius...`, 'info');
+        farElements = await fetchFromOverpass(currentLat, currentLon, 100000);
+      }
+
+      const restaurantTypes = ['restaurant', 'cafe', 'bar', 'fast_food'];
+      const specialTypes = ['temple', 'church', 'mosque', 'gurdwara', 'place_of_worship', 'museum', 'viewpoint', 'gallery', 'theme_park', 'zoo', 'historic', 'park', 'garden', 'nature_reserve', 'attraction'];
+
+      const toSpot = el => {
+        const lat = el.lat, lon = el.lon;
+        if (!el.tags?.name || !lat || !lon) return null;
+        const type = getPlaceType(el.tags);
+        const dist = calcDist(currentLat, currentLon, lat, lon);
+        return {
+          id: el.id, lat, lon,
+          name: el.tags.name, type, dist,
+          distLabel: dist < 1 ? `${Math.round(dist*1000)}m` : `${dist.toFixed(1)}km`,
+          cuisine: el.tags.cuisine || '',
+          opening_hours: el.tags.opening_hours || '',
+          religion: el.tags.religion || ''
+        };
+      };
+
+      const restaurants = elements.map(toSpot).filter(Boolean).filter(s => restaurantTypes.includes(s.type));
+      const nearSpecial = elements.map(toSpot).filter(Boolean).filter(s => specialTypes.includes(s.type));
+      const farSpecial = farElements.map(toSpot).filter(Boolean).filter(s => specialTypes.includes(s.type));
+      const seenIds = new Set();
+      const allSpecial = [...nearSpecial, ...farSpecial].filter(s => {
+        if (seenIds.has(s.id)) return false;
+        seenIds.add(s.id); return true;
+      });
+
+      const all = [...allSpecial, ...restaurants].sort((a, b) => a.dist - b.dist);
+
+      // Stats
+      const stats = document.getElementById('stats');
+      stats.style.display = 'flex';
+      stats.innerHTML = `
+        <div class="stat"><div class="num">${all.length}</div><div class="label">Total Places</div></div>
+        <div class="stat"><div class="num">${allSpecial.length}</div><div class="label">Special Places</div></div>
+        <div class="stat"><div class="num">${restaurants.length}</div><div class="label">Restaurants/Cafes</div></div>
+        <div class="stat"><div class="num">${allSpecial.filter(s=>['temple','mosque','church','place_of_worship','gurdwara'].includes(s.type)).length}</div><div class="label">Temples/Worship</div></div>
+      `;
+
+      if (all.length === 0) {
+        log('❌ No real places found. The Overpass API may be unreachable from this browser, or the area has very sparse OSM data.', 'err');
+        return;
+      }
+
+      log(`✅ Total: <b>${all.length} places</b> (${allSpecial.length} special, ${restaurants.length} restaurants)`, 'ok');
+
+      const resultsEl = document.getElementById('results');
+      all.forEach(s => {
+        const div = document.createElement('div');
+        div.className = `card ${s.type}`;
+        div.innerHTML = `
+          <h3>${typeEmoji[s.type] || '📍'} ${s.name}</h3>
+          <div class="type">${s.type.replace('_', ' ')}${s.cuisine ? ` • ${s.cuisine}` : ''}${s.religion ? ` • ${s.religion}` : ''}</div>
+          <div class="dist">📏 ${s.distLabel} away${s.opening_hours ? ` • 🕐 ${s.opening_hours}` : ''}</div>
+        `;
+        resultsEl.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>

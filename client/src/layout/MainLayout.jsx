@@ -5,10 +5,12 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { 
   Home, Wallet, Map, User, LogOut, Compass, Bell, 
-  Settings, Calendar, CheckSquare, ChevronLeft, Menu, Moon, Sun
+  Settings, Calendar, CheckSquare, ChevronLeft, Menu, Moon, Sun, Shield, Leaf, Users
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CopilotAssistant } from '../components/CopilotAssistant';
+import { CopilotPopup } from "@copilotkit/react-ui";
+import { useCopilotAction } from "@copilotkit/react-core";
+import { AIAssistant } from '../components/AIAssistant';
 
 const MainLayout = ({ children }) => {
   const { user, logout } = useAuth();
@@ -16,18 +18,64 @@ const MainLayout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
+  useCopilotAction({
+    name: "add_expense",
+    description: "Log a new expense for the trip",
+    parameters: [
+      { name: "amount", type: "number", description: "The amount spent", required: true },
+      { name: "description", type: "string", description: "What the expense was for", required: true },
+      { name: "category", type: "string", description: "Expense category (e.g., Food, Transport)", required: true }
+    ],
+    handler: async ({ amount, description, category }) => {
+      window.dispatchEvent(new Event('expense-updated'));
+      return `Added expense: ${description} for ₹${amount}`;
+    }
+  });
+
+  useCopilotAction({
+    name: "add_itinerary_item",
+    description: "Add an activity to the travel itinerary",
+    parameters: [
+      { name: "name", type: "string", description: "Name of the activity", required: true },
+      { name: "day_number", type: "number", description: "Which day of the trip", required: true },
+      { name: "time_slot", type: "string", description: "Time of the activity", required: true }
+    ],
+    handler: async ({ name, day_number, time_slot }) => {
+      window.dispatchEvent(new Event('itinerary-updated'));
+      return `Added itinerary item: ${name} on Day ${day_number} at ${time_slot}`;
+    }
+  });
+
+  useCopilotAction({
+    name: "add_packing_item",
+    description: "Add an item to the packing list",
+    parameters: [
+      { name: "name", type: "string", description: "Name of the item", required: true },
+      { name: "category", type: "string", description: "Category of the item", required: true }
+    ],
+    handler: async ({ name, category }) => {
+      window.dispatchEvent(new Event('packing-updated'));
+      return `Added ${name} to packing list under ${category}`;
+    }
+  });
+
   const navItems = [
-    { to: '/', icon: <Home size={22} />, label: 'Dashboard' },
-    { to: '/itinerary', icon: <Calendar size={22} />, label: 'Itinerary' },
-    { to: '/expenses', icon: <Wallet size={22} />, label: 'Expenses' },
+    { to: '/', icon: <Home size={22} />, label: 'Trip Dashboard' },
+    { to: '/itinerary', icon: <Calendar size={22} />, label: 'Itinerary Planner' },
+    { to: '/expenses', icon: <Wallet size={22} />, label: 'Expense Tracker' },
+    { to: '/settlements', icon: <Users size={22} />, label: 'Split Bills (Squad)' },
     { to: '/packing', icon: <CheckSquare size={22} />, label: 'Packing List' },
-    { to: '/map', icon: <Map size={22} />, label: 'Live Track' },
+    { to: '/map', icon: <Map size={22} />, label: 'Explore Attractions & Food' },
+    { to: '/safety', icon: <Shield size={22} />, label: 'Safety & Secure Vault' },
+    { to: '/eco', icon: <Leaf size={22} />, label: 'Eco & Carbon Tracker' },
   ];
 
   return (
@@ -151,26 +199,86 @@ const MainLayout = ({ children }) => {
           <div style={{ opacity: 0.8 }}>
              {/* Dynamic Breadcrumbs or Search could go here */}
           </div>
-          <div style={{ display: 'flex', gap: '16px' }}>
+          <div style={{ display: 'flex', gap: '16px', position: 'relative' }}>
              <button 
                onClick={toggleTheme}
                className="glass-card" 
-               style={{ padding: '10px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+               style={{ padding: '10px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', border: 'none' }}
              >
                 {theme === 'light' ? <Moon size={20} color="var(--text-muted)" /> : <Sun size={20} color="var(--warning)" />}
              </button>
-             <button className="glass-card" style={{ padding: '10px', borderRadius: '12px', cursor: 'pointer' }}>
-                <Bell size={20} color="var(--text-muted)" />
-             </button>
-             <button className="glass-card" style={{ padding: '10px', borderRadius: '12px', cursor: 'pointer' }}>
-                <Menu size={20} color="var(--text-muted)" />
-             </button>
+             
+             <div style={{ position: 'relative' }}>
+               <button 
+                 onClick={() => { setShowNotifications(!showNotifications); setShowMenu(false); }}
+                 className="glass-card" 
+                 style={{ padding: '10px', borderRadius: '12px', cursor: 'pointer', border: 'none' }}
+               >
+                  <Bell size={20} color="var(--text-muted)" />
+                  <span style={{ position: 'absolute', top: 4, right: 4, width: 8, height: 8, background: 'var(--danger)', borderRadius: '50%' }} />
+               </button>
+               <AnimatePresence>
+                 {showNotifications && (
+                   <motion.div 
+                     initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
+                     style={{ 
+                       position: 'absolute', top: '100%', right: 0, marginTop: '12px', width: '320px', 
+                       background: 'var(--bg-surface)', border: '1px solid var(--border-light)', 
+                       borderRadius: '16px', padding: '16px', boxShadow: 'var(--shadow-lg)', zIndex: 105 
+                     }}
+                   >
+                     <h4 style={{ margin: '0 0 12px 0', fontSize: '14px' }}>Notifications</h4>
+                     <div style={{ padding: '12px', background: 'var(--primary-glow)', borderRadius: '8px', marginBottom: '8px' }}>
+                       <p style={{ margin: 0, fontSize: '13px', fontWeight: '600', color: 'var(--primary)' }}>Tourist Radar is Active!</p>
+                       <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-muted)' }}>We are fetching nearby places.</p>
+                     </div>
+                   </motion.div>
+                 )}
+               </AnimatePresence>
+             </div>
+
+             <div style={{ position: 'relative' }}>
+               <button 
+                 onClick={() => { setShowMenu(!showMenu); setShowNotifications(false); }}
+                 className="glass-card" 
+                 style={{ padding: '10px', borderRadius: '12px', cursor: 'pointer', border: 'none' }}
+               >
+                  <Menu size={20} color="var(--text-muted)" />
+               </button>
+               <AnimatePresence>
+                 {showMenu && (
+                   <motion.div 
+                     initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
+                     style={{ 
+                       position: 'absolute', top: '100%', right: 0, marginTop: '12px', width: '200px', 
+                       background: 'var(--bg-surface)', border: '1px solid var(--border-light)', 
+                       borderRadius: '16px', padding: '8px', boxShadow: 'var(--shadow-lg)', zIndex: 105,
+                       display: 'flex', flexDirection: 'column', gap: '4px'
+                     }}
+                   >
+                     <button onClick={() => {navigate('/profile'); setShowMenu(false);}} style={{ padding: '10px 12px', textAlign: 'left', background: 'transparent', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>My Profile</button>
+                     <button onClick={() => {navigate('/settings'); setShowMenu(false);}} style={{ padding: '10px 12px', textAlign: 'left', background: 'transparent', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>Settings</button>
+                     <div style={{ height: '1px', background: 'var(--border-light)', margin: '4px 0' }} />
+                     <button onClick={handleLogout} style={{ padding: '10px 12px', textAlign: 'left', background: 'transparent', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', color: 'var(--danger)' }}>Logout</button>
+                   </motion.div>
+                 )}
+               </AnimatePresence>
+             </div>
           </div>
         </header>
         {children}
       </main>
 
-      <CopilotAssistant />
+      <CopilotPopup
+        instructions="You are a travel assistant for TravelSense. Help the user log expenses, plan itineraries, and suggest packing items."
+        labels={{
+          title: "TravelSense Copilot",
+          initial: "Hi! I am your TravelSense Copilot. How can I help you today?",
+        }}
+      />
+
+      {/* AI Travel Assistant floating button */}
+      <AIAssistant />
 
       <style>{`
         .logout-btn:hover {

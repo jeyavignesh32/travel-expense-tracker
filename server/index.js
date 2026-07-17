@@ -10,6 +10,7 @@ const tripRoutes = require('./routes/trips');
 const itineraryRoutes = require('./routes/itinerary');
 const packingRoutes = require('./routes/packing');
 const copilotRoutes = require('./routes/copilot');
+const nearbyRoutes = require('./routes/nearby');
 const { pool } = require('./db/config');
 
 const app = express();
@@ -31,6 +32,7 @@ app.use('/api/trips', tripRoutes);
 app.use('/api/itinerary', itineraryRoutes);
 app.use('/api/packing', packingRoutes);
 app.use('/api/copilot', copilotRoutes);
+app.use('/api/nearby', nearbyRoutes);
 
 // Socket.io for Real-time Location Updates
 io.on('connection', (socket) => {
@@ -42,8 +44,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('update-location', async (data) => {
-    const { userId, tripId, latitude, longitude, accuracy, speed, heading } = data;
-    io.to(`trip-${tripId}`).emit('location-pulse', { userId, latitude, longitude, timestamp: new Date() });
+    const { userId, userName, tripId, latitude, longitude, accuracy, speed, heading } = data;
+    io.to(`trip-${tripId}`).emit('location-pulse', { userId, userName, latitude, longitude, timestamp: new Date() });
 
     try {
       await pool.query(
