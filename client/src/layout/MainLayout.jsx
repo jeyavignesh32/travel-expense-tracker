@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { 
   Home, Wallet, Map, User, LogOut, Compass, Bell, 
-  Settings, Calendar, CheckSquare, ChevronLeft, Menu, Moon, Sun, Shield, Leaf, Users
+  Palette,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CopilotPopup } from "@copilotkit/react-ui";

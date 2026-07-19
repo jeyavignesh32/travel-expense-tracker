@@ -15,8 +15,12 @@ export const ThemeProvider = ({ children }) => {
     setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
   };
 
+  const setVibrantTheme = () => {
+    setTheme('vibrant');
+  };
+
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, setVibrantTheme }}>
       {children}
     </ThemeContext.Provider>
   );
