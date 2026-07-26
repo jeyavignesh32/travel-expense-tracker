@@ -5,7 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { 
   Home, Wallet, Map, User, LogOut, Compass, Bell, 
-  Palette,
+  Palette, Calendar, Users, CheckSquare, Shield, 
+  Leaf, Settings, ChevronLeft, Moon, Sun, Menu
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CopilotPopup } from "@copilotkit/react-ui";
@@ -202,10 +203,22 @@ const MainLayout = ({ children }) => {
           <div style={{ display: 'flex', gap: '16px', position: 'relative' }}>
              <button 
                onClick={toggleTheme}
-               className="glass-card" 
-               style={{ padding: '10px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', border: 'none' }}
+               className={`glass-card ${theme === 'vibrant' ? 'glow-animate gradient-border' : ''}`}
+               style={{ 
+                 padding: '10px', 
+                 borderRadius: '12px', 
+                 cursor: 'pointer', 
+                 display: 'flex', 
+                 alignItems: 'center', 
+                 gap: '8px', 
+                 border: 'none',
+                 transition: 'all 0.3s ease'
+               }}
+               title={`Current theme: ${theme}. Click to change.`}
              >
-                {theme === 'light' ? <Moon size={20} color="var(--text-muted)" /> : <Sun size={20} color="var(--warning)" />}
+                {theme === 'light' && <Moon size={20} color="var(--text-muted)" />}
+                {theme === 'dark' && <Palette size={20} color="var(--rose)" />}
+                {theme === 'vibrant' && <Sun size={20} color="var(--warning)" />}
              </button>
              
              <div style={{ position: 'relative' }}>

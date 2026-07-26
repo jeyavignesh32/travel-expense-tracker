@@ -106,7 +106,7 @@ export const Dashboard = () => {
   return (
     <div className="animate-entrance">
       <header style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '38px', fontWeight: '800' }}>Adventure <span className="gradient-text">Hub</span></h1>
+        <h1 style={{ fontSize: '38px', fontWeight: '800' }}>Adventure <span className="rainbow-text">Hub</span></h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '16px' }}>Exploring Goa, India • Apr 21 - Apr 27</p>
       </header>
 
@@ -208,9 +208,9 @@ export const Dashboard = () => {
             </div>
             
             {/* AI Budget Forecasting */}
-            <div className="glass-card" style={{ padding: '32px', height: '400px', background: 'linear-gradient(180deg, var(--bg-surface) 0%, rgba(245, 158, 11, 0.05) 100%)' }}>
+            <div className="glass-card gradient-border glow-animate" style={{ padding: '32px', height: '400px', background: 'linear-gradient(180deg, var(--bg-surface) 0%, rgba(245, 158, 11, 0.05) 100%)' }}>
               <h3 style={{ fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
-                <Sparkles size={18} color="var(--warning)" /> Copilot Forecast
+                <Sparkles size={18} className="rainbow-text glow-animate" /> <span className="rainbow-text">Copilot Forecast</span>
               </h3>
               <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '24px', lineHeight: '1.6' }}>
                 Based on your daily average and destination cost-of-living index, you are projected to spend <strong>₹8,400</strong> over the next 3 days.
