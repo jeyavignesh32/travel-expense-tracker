@@ -67,24 +67,30 @@ export default function MapCanvas({
   refetchPlaces
 }) {
   return (
-    <MapContainer center={center} zoom={14} style={{ height: '100%', width: '100%', zIndex: 1 }}>
+    <MapContainer center={center} zoom={14} maxZoom={22} style={{ height: '100%', width: '100%', zIndex: 1 }}>
       <MapMoveListener refetchPlaces={refetchPlaces} />
       {mapLayer === 'street' && (
         <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; OpenStreetMap'
+          url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
+          attribution='&copy; Google Maps'
+          maxZoom={22}
+          maxNativeZoom={22}
         />
       )}
       {mapLayer === 'satellite' && (
         <TileLayer
-          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-          attribution='Tiles &copy; Esri'
+          url="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
+          attribution='&copy; Google Maps'
+          maxZoom={22}
+          maxNativeZoom={20}
         />
       )}
       {mapLayer === 'terrain' && (
         <TileLayer
-          url="https://stamen-tiles-{s}.a.ssl.fastly.net/terrain/{z}/{x}/{y}{r}.png"
-          attribution='Map tiles by Stamen Design'
+          url="https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}"
+          attribution='&copy; Google Maps'
+          maxZoom={22}
+          maxNativeZoom={20}
         />
       )}
       
