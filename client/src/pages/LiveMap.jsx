@@ -38,9 +38,37 @@ export const LiveMap = () => {
   const hasCentered = useRef(false);
   const socketRef = useRef();
 
-  // Fix infinite re-fetching from GPS jitter by rounding coordinates to 3 decimals (~111 meters)
-  const queryLat = myLocation?.latitude ? Number(myLocation.latitude.toFixed(3)) : undefined;
-  const queryLon = myLocation?.longitude ? Number(myLocation.longitude.toFixed(3)) : undefined;
+  const [queryCoords, setQueryCoords] = useState(null);
+
+  useEffect(() => {
+    if (myLocation) {
+      if (!queryCoords) {
+        setQueryCoords({ lat: myLocation.latitude, lon: myLocation.longitude });
+      } else {
+        // Calculate geodesic distance in meters (Haversine formula)
+        const R = 6371000; // Earth's radius in meters
+        const lat1 = (queryCoords.lat * Math.PI) / 180;
+        const lat2 = (myLocation.latitude * Math.PI) / 180;
+        const dLat = ((myLocation.latitude - queryCoords.lat) * Math.PI) / 180;
+        const dLon = ((myLocation.longitude - queryCoords.lon) * Math.PI) / 180;
+
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(lat1) * Math.cos(lat2) *
+          Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const distance = R * c;
+
+        // Only update search query coordinate if the user has moved > 10 meters
+        if (distance > 10) {
+          setQueryCoords({ lat: myLocation.latitude, lon: myLocation.longitude });
+        }
+      }
+    }
+  }, [myLocation, queryCoords]);
+
+  const queryLat = queryCoords?.lat;
+  const queryLon = queryCoords?.lon;
 
   // Fetch places using React Query hook
   const { places, isLoading, refetch } = useNearbyPlaces(
