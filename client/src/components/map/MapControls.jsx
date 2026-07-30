@@ -2,10 +2,13 @@
 import React from 'react';
 import { Layers, MapPin, Navigation } from 'lucide-react';
 
-export default function MapControls({ mapLayer, setMapLayer, mapSettings, setMapSettings, onRecenter, navigationInfo }) {
+export default function MapControls({ mapLayer, setMapLayer, mapSettings, setMapSettings, onRecenter, navigationInfo, currentRadius = mapSettings.radius }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '8px', flexWrap: 'wrap' }}>
-      <label style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Radius: {mapSettings.radius} km</label>
+      <label style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+        Radius: {currentRadius < 1 ? `${Math.round(currentRadius * 1000)}m` : `${currentRadius.toFixed(1)}km`}
+        {currentRadius !== mapSettings.radius && ' (Auto)'}
+      </label>
       <input
         type="range"
         min="1"

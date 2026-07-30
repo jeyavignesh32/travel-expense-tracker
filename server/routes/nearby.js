@@ -92,6 +92,58 @@ function distanceM(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
+function overpassSearch(lat, lon, radiusM) {
+  return new Promise(async (resolve, reject) => {
+    const r = Math.round(radiusM);
+    // Comprehensive Overpass QL query targeting node elements with POI tags
+    const query = `[out:json][timeout:8];(
+      node["amenity"~"atm|bank|hospital|pharmacy|restaurant|cafe|bar|pub|fast_food|food_court|place_of_worship|school|college|townhall|police|post_office"](around:${r},${lat},${lon});
+      node["tourism"~"hotel|guest_house|hostel|motel|museum|attraction|viewpoint|artwork|gallery|theme_park|zoo"](around:${r},${lat},${lon});
+      node["shop"](around:${r},${lat},${lon});
+      node["historic"~"monument|memorial|ruins|castle|archaeological_site"](around:${r},${lat},${lon});
+      node["leisure"~"park|garden|nature_reserve|playground|water_park"](around:${r},${lat},${lon});
+      node["amenity"="fuel"](around:${r},${lat},${lon});
+    );out body 80;`;
+
+    const endpoints = [
+      'https://overpass-api.de/api/interpreter',
+      'https://lz4.overpass-api.de/api/interpreter'
+    ];
+
+    let lastError = null;
+    for (const endpoint of endpoints) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      try {
+        const url = `${endpoint}?data=${encodeURIComponent(query)}`;
+        const res = await fetch(url, {
+          headers: {
+            'User-Agent': 'TravelExpenseApp/1.0 (travel-expense-tracker)',
+            'Accept': 'application/json'
+          },
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (res.status === 200) {
+          const data = await res.json();
+          if (data && Array.isArray(data.elements)) {
+            return resolve(data.elements);
+          }
+        } else {
+          console.warn(`[Overpass] Endpoint ${endpoint} returned status ${res.status}`);
+        }
+      } catch (err) {
+        clearTimeout(timeoutId);
+        console.warn(`[Overpass] Endpoint ${endpoint} failed:`, err.message);
+        lastError = err;
+      }
+    }
+    reject(lastError || new Error('All Overpass endpoints failed'));
+  });
+}
+
 // GET /api/nearby/spots?lat=&lon=&radius=
 router.get('/spots', async (req, res) => {
   const { lat, lon, radius } = req.query;
@@ -110,71 +162,103 @@ router.get('/spots', async (req, res) => {
 
   console.log(`[Nearby] Fetching places near ${lat},${lon} r=${r}m`);
 
+  let elements = [];
+  let source = 'overpass';
+
   try {
-    // Fetch top 3 categories in parallel for speed, rest sequentially
-    const [restaurants, hospitals, atms, banks, pharmacies, hotels, cafes, shops, fuel, attractions] = await Promise.all(
-      PLACE_CATEGORIES.map(cat => nominatimSearch(lat, lon, r, cat.q))
-    );
+    elements = await overpassSearch(lat, lon, r);
+    console.log(`[Nearby] Overpass query success: found ${elements.length} raw elements`);
+  } catch (overpassErr) {
+    console.warn('[Nearby] Overpass API failed, falling back to Nominatim:', overpassErr.message);
+    source = 'nominatim';
+    try {
+      // Nominatim Fallback
+      const [restaurants, hospitals, atms, banks, pharmacies, hotels, cafes, shops, fuel, attractions] = await Promise.all(
+        PLACE_CATEGORIES.map(cat => nominatimSearch(lat, lon, r, cat.q))
+      );
 
-    const rawBatches = [
-      { items: restaurants, type: 'restaurant' },
-      { items: hospitals, type: 'hospital' },
-      { items: atms, type: 'atm' },
-      { items: banks, type: 'bank' },
-      { items: pharmacies, type: 'pharmacy' },
-      { items: hotels, type: 'hotel' },
-      { items: cafes, type: 'cafe' },
-      { items: shops, type: 'shop' },
-      { items: fuel, type: 'fuel' },
-      { items: attractions, type: 'attraction' },
-    ];
+      const rawBatches = [
+        { items: restaurants, type: 'restaurant' },
+        { items: hospitals, type: 'hospital' },
+        { items: atms, type: 'atm' },
+        { items: banks, type: 'bank' },
+        { items: pharmacies, type: 'pharmacy' },
+        { items: hotels, type: 'hotel' },
+        { items: cafes, type: 'cafe' },
+        { items: shops, type: 'shop' },
+        { items: fuel, type: 'fuel' },
+        { items: attractions, type: 'attraction' },
+      ];
 
-    const seen = new Set();
-    const places = [];
+      const seen = new Set();
+      for (const batch of rawBatches) {
+        for (const item of batch.items) {
+          if (!item.lat || !item.lon) continue;
+          if (seen.has(item.osm_id)) continue;
+          seen.add(item.osm_id);
 
-    for (const batch of rawBatches) {
-      for (const item of batch.items) {
-        if (!item.lat || !item.lon) continue;
-        if (seen.has(item.osm_id)) continue;
-        seen.add(item.osm_id);
+          const dist = distanceM(parseFloat(lat), parseFloat(lon), parseFloat(item.lat), parseFloat(item.lon));
+          if (dist > r) continue;
 
-        const dist = distanceM(parseFloat(lat), parseFloat(lon), parseFloat(item.lat), parseFloat(item.lon));
-        if (dist > r) continue; // strictly within radius
-
-        places.push({
-          id: item.osm_id,
-          lat: parseFloat(item.lat),
-          lon: parseFloat(item.lon),
-          type: batch.type,
-          category: batch.type,
-          name: item.name || item.display_name?.split(',')[0] || batch.type,
-          tags: {
-            name: item.name || item.display_name?.split(',')[0] || batch.type,
-            amenity: item.type,
-            'addr:city': item.address?.city || item.address?.town,
-            'addr:road': item.address?.road,
-          },
-          categories: [batch.type],
-          distance: Math.round(dist),
-          distanceLabel: dist < 1000 ? `${Math.round(dist)}m` : `${(dist/1000).toFixed(1)}km`,
-        });
+          elements.push({
+            id: item.osm_id,
+            lat: parseFloat(item.lat),
+            lon: parseFloat(item.lon),
+            tags: {
+              name: item.name || item.display_name?.split(',')[0] || batch.type,
+              amenity: item.type,
+              'addr:city': item.address?.city || item.address?.town,
+              'addr:road': item.address?.road,
+            },
+            type: batch.type,
+          });
+        }
       }
+    } catch (nominatimErr) {
+      console.error('[Nearby] Both Overpass and Nominatim failed:', nominatimErr.message);
+      return res.status(503).json({ error: 'Nearby places temporarily unavailable', details: nominatimErr.message });
     }
-
-    // Sort by distance
-    places.sort((a, b) => a.distance - b.distance);
-
-    const result = { places, total: places.length };
-    cache.set(cacheKey, { data: result, expiresAt: Date.now() + CACHE_TTL_MS });
-
-    console.log(`[Nearby] Found ${places.length} places`);
-    res.setHeader('X-Cache', 'MISS');
-    res.setHeader('Cache-Control', 'public, max-age=300');
-    return res.json(result);
-  } catch (err) {
-    console.error('[Nearby] Error:', err.message);
-    return res.status(503).json({ error: 'Nearby places temporarily unavailable', details: err.message });
   }
+
+  // Process raw elements into client format
+  const seenIds = new Set();
+  const places = [];
+
+  for (const el of elements) {
+    if (!el.lat || !el.lon) continue;
+    if (seenIds.has(el.id)) continue;
+    seenIds.add(el.id);
+
+    const dist = distanceM(parseFloat(lat), parseFloat(lon), parseFloat(el.lat), parseFloat(el.lon));
+    if (dist > r) continue; // strictly within radius
+
+    const type = el.type || el.tags?.amenity || el.tags?.shop || el.tags?.tourism || el.tags?.historic || el.tags?.leisure || 'attraction';
+
+    places.push({
+      id: el.id,
+      lat: parseFloat(el.lat),
+      lon: parseFloat(el.lon),
+      type: type,
+      category: type,
+      name: el.tags?.name || type.charAt(0).toUpperCase() + type.slice(1),
+      tags: el.tags || {},
+      categories: [type],
+      distance: Math.round(dist),
+      distanceLabel: dist < 1000 ? `${Math.round(dist)}m` : `${(dist/1000).toFixed(1)}km`,
+    });
+  }
+
+  // Sort by distance
+  places.sort((a, b) => a.distance - b.distance);
+
+  const result = { places, total: places.length, source };
+  cache.set(cacheKey, { data: result, expiresAt: Date.now() + CACHE_TTL_MS });
+
+  console.log(`[Nearby] Found ${places.length} places (Source: ${source})`);
+  res.setHeader('X-Cache', 'MISS');
+  res.setHeader('X-Data-Source', source);
+  res.setHeader('Cache-Control', 'public, max-age=300');
+  return res.json(result);
 });
 
 router.get('/weather', async (req, res) => {

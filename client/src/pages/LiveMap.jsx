@@ -29,7 +29,7 @@ export const LiveMap = () => {
       try {
         const parsed = JSON.parse(savedData);
         return { radius: parsed.mapRadius || 5 };
-      } catch (e) {}
+      } catch { /* ignore parsing errors */ }
     }
     return { radius: 5 };
   });
@@ -39,10 +39,32 @@ export const LiveMap = () => {
   const socketRef = useRef();
 
   const [queryCoords, setQueryCoords] = useState(null);
+  const [mapCenter, setMapCenter] = useState(null);
+  const [mapZoom, setMapZoom] = useState(14);
+  const debounceTimerRef = useRef(null);
+
+  const handleMapChange = (lat, lon, zoom) => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      setMapCenter({ lat, lon });
+      setMapZoom(zoom);
+    }, 400);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (myLocation) {
       if (!queryCoords) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setQueryCoords({ lat: myLocation.latitude, lon: myLocation.longitude });
       } else {
         // Calculate geodesic distance in meters (Haversine formula)
@@ -67,21 +89,35 @@ export const LiveMap = () => {
     }
   }, [myLocation, queryCoords]);
 
-  const queryLat = queryCoords?.lat;
-  const queryLon = queryCoords?.lon;
+  const activeLat = mapCenter?.lat || queryCoords?.lat;
+  const activeLon = mapCenter?.lon || queryCoords?.lon;
+
+  const getRadiusForZoom = (zoom) => {
+    if (zoom >= 20) return 0.1;   // 100m
+    if (zoom === 19) return 0.15;  // 150m
+    if (zoom === 18) return 0.25;  // 250m
+    if (zoom === 17) return 0.5;   // 500m
+    if (zoom === 16) return 0.8;   // 800m
+    if (zoom === 15) return 1.5;   // 1.5km
+    if (zoom === 14) return 3.0;   // 3km
+    return 5.0;                   // 5km
+  };
+
+  const currentRadius = Math.min(mapSettings.radius, getRadiusForZoom(mapZoom));
 
   // Fetch places using React Query hook
-  const { places, isLoading, refetch } = useNearbyPlaces(
-    queryLat, 
-    queryLon, 
+  const { places, isLoading } = useNearbyPlaces(
+    activeLat, 
+    activeLon, 
     [], // empty array fetches all categories
-    mapSettings.radius * 1000
+    currentRadius * 1000
   );
 
   // Initialize geolocation and socket
   useEffect(() => {
     if (myLocation && !hasCentered.current) {
       hasCentered.current = true;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRecenterTrigger(prev => prev + 1);
     }
   }, [myLocation]);
@@ -172,6 +208,7 @@ export const LiveMap = () => {
           setMapSettings={setMapSettings}
           onRecenter={handleRecenter}
           navigationInfo={navigationInfo}
+          currentRadius={currentRadius}
         />
       </header>
 
@@ -201,7 +238,7 @@ export const LiveMap = () => {
             members={members}
             onSpotClick={handleSpotClick}
             selectedSpot={selectedSpot}
-            refetchPlaces={refetch}
+            onMapChange={handleMapChange}
           />
         </div>
 

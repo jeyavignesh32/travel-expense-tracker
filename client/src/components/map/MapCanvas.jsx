@@ -1,5 +1,5 @@
 // client/src/components/map/MapCanvas.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, Circle, Polyline, useMapEvents } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import { Landmark, Eye, TreePine, Ticket, Utensils, Coffee, GlassWater, Star } from 'lucide-react';
@@ -43,13 +43,25 @@ const RecenterMap = ({ position, trigger }) => {
   return null;
 };
 
-const MapMoveListener = ({ refetchPlaces }) => {
-  useMapEvents({
+const MapMoveListener = ({ onMapChange }) => {
+  const map = useMapEvents({
     moveend: () => {
-      // Debounce or just trigger directly. react-query handles deduplication somewhat, but direct call is fine.
-      if (refetchPlaces) refetchPlaces();
+      const center = map.getCenter();
+      const zoom = map.getZoom();
+      if (onMapChange) {
+        onMapChange(center.lat, center.lng, zoom);
+      }
     }
   });
+
+  useEffect(() => {
+    const center = map.getCenter();
+    const zoom = map.getZoom();
+    if (onMapChange) {
+      onMapChange(center.lat, center.lng, zoom);
+    }
+  }, [map, onMapChange]);
+
   return null;
 };
 
@@ -63,12 +75,11 @@ export default function MapCanvas({
   routeCoords,
   members,
   onSpotClick,
-  selectedSpot,
-  refetchPlaces
+  onMapChange
 }) {
   return (
     <MapContainer center={center} zoom={14} maxZoom={22} style={{ height: '100%', width: '100%', zIndex: 1 }}>
-      <MapMoveListener refetchPlaces={refetchPlaces} />
+      <MapMoveListener onMapChange={onMapChange} />
       {mapLayer === 'street' && (
         <TileLayer
           url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
