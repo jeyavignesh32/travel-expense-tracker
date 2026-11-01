@@ -1,23 +1,10 @@
-# Dependencies
 node_modules/
-
-# Environment variables
+client/node_modules/
+server/node_modules/
 .env
-*.env.local
-*.env.*.local
-
-# Build output
+.env.local
+.env.production
 dist/
 build/
-
-# Logs
-*.log
-npm-debug.log*
-
-# OS files
+coverage/
 .DS_Store
-Thumbs.db
-
-# IDE
-.vscode/
-.idea/

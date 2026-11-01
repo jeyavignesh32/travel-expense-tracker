@@ -1,0 +1,27 @@
+// Real OpenStreetMap tags used for nearby discovery. Availability depends on local OSM mapping.
+export const CATEGORIES = {
+  hospital:{label:"Hospital",color:"#dc2626",icon:"🏥",query:'["amenity"="hospital"]'},
+  clinic:{label:"Clinic",color:"#ef4444",icon:"🩺",query:'["amenity"="clinic"]'},
+  doctors:{label:"Doctors",color:"#f97316",icon:"⚕️",query:'["amenity"="doctors"]'},
+  pharmacy:{label:"Pharmacy",color:"#16a34a",icon:"💊",query:'["amenity"="pharmacy"]'},
+  hotel:{label:"Hotel",color:"#0891b2",icon:"🏨",query:'["tourism"="hotel"]'},
+  motel:{label:"Motel",color:"#0e7490",icon:"🛎️",query:'["tourism"="motel"]'},
+  guest_house:{label:"Guest House",color:"#0f766e",icon:"🛏️",query:'["tourism"="guest_house"]'},
+  hostel:{label:"Hostel",color:"#14b8a6",icon:"🛌",query:'["tourism"="hostel"]'},
+  attraction:{label:"Must-visit places",color:"#9333ea",icon:"📸",query:'["tourism"="attraction"]'},
+  museum:{label:"Museum",color:"#7c3aed",icon:"🏛️",query:'["tourism"="museum"]'},
+  viewpoint:{label:"Viewpoint",color:"#8b5cf6",icon:"🌄",query:'["tourism"="viewpoint"]'},
+  historic:{label:"Historic places",color:"#a16207",icon:"🛕",query:'["historic"]'},
+  school:{label:"School",color:"#7c3aed",icon:"🏫",query:'["amenity"="school"]'},
+  college:{label:"College",color:"#6d28d9",icon:"🎓",query:'["amenity"="college"]'},
+  university:{label:"University",color:"#5b21b6",icon:"🏢",query:'["amenity"="university"]'},
+  restaurant:{label:"Restaurant",color:"#ea580c",icon:"🍽️",query:'["amenity"="restaurant"]'},
+  cafe:{label:"Cafe",color:"#c2410c",icon:"☕",query:'["amenity"="cafe"]'},
+  atm:{label:"ATM",color:"#2563eb",icon:"🏧",query:'["amenity"="atm"]'},
+  bank:{label:"Bank",color:"#1d4ed8",icon:"🏦",query:'["amenity"="bank"]'},
+  police:{label:"Police",color:"#1e40af",icon:"👮",query:'["amenity"="police"]'},
+  bus_station:{label:"Bus station",color:"#475569",icon:"🚌",query:'["amenity"="bus_station"]'},
+  fuel:{label:"Fuel station",color:"#64748b",icon:"⛽",query:'["amenity"="fuel"]'},
+  supermarket:{label:"Supermarket",color:"#ca8a04",icon:"🛒",query:'["shop"="supermarket"]'},
+};
+export const CATEGORY_KEYS = Object.keys(CATEGORIES);
